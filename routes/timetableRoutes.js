@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 // const timetableController = require('../controllers/timetableController');
-const { getAllTimetables ,addTimetableEntry ,getAllTimetableData } = require('../controllers/timetableController');
+const { getAllTimetables ,addTimetableEntry ,getAllTimetableData ,editTimetableEntry,deleteTimetableEntry } = require('../controllers/timetableController');
 const {
     createStudent,
     getAllStudents,
@@ -12,12 +12,18 @@ const {
 
 
 // Add a new timetable entry
-router.post('/add', addTimetableEntry);
+router.post('/add_time', addTimetableEntry);
+
+router.post('/edit_time', editTimetableEntry);
+
+router.delete('/deleteTimeTable/:id', deleteTimetableEntry);
 
 // Get the timetable for a branch and year
 router.get('/getSaveTimeTables', getAllTimetables);
 
 router.get('/getAllData', getAllTimetableData);
+
+
 
 // Route for creating a student
 router.post('/students', createStudent);

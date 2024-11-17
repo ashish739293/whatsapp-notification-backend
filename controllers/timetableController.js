@@ -6,13 +6,21 @@ const Teacher = require('../models/Teacher');
 const Classroom = require('../models/Classroom');
 
 
-exports.addTimetableEntry = async (req, res) => {
+exports.deleteTimetableEntry = async (req, res) => {
+    const { id } = req.params;
+    console.log("<><><><><><>",id);
     try {
-        const newTimetable = new Timetable(req.body);
-        await newTimetable.save();
-        res.status(201).json(newTimetable);
+        // Find the timetable entry by ID and delete it
+        const deletedTimetable = await Timetable.findByIdAndDelete(id);
+
+        if (!deletedTimetable) {
+            return res.status(404).json({ message: 'Timetable entry not found' });
+        }
+
+        return res.status(200).json({ message: 'Timetable entry deleted successfully', deletedTimetable });
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        console.error(error);
+        return res.status(500).json({ message: 'Server error' });
     }
 };
 
@@ -64,3 +72,81 @@ exports.getAllTimetableData = async (req, res) => {
       }
 };
 
+
+// Helper function for validation
+const validateRequestBody = (body) => {
+    const requiredFields = [
+        'subject',
+        'teacher',
+        'classroom',
+        'branch',
+        'year',
+        'startTime',
+        'endTime',
+        'day'
+    ];
+    for (const field of requiredFields) {
+        if (!body[field]) {
+            return `Missing required field: ${field}`;
+        }
+    }
+    return null;
+};
+
+// Store (Add) API
+exports.addTimetableEntry = async (req, res) => {
+    try {
+        const validationError = validateRequestBody(req.body);
+        if (validationError) {
+            return res.status(400).json({ message: validationError });
+        }
+        console.log("<><><><><><data><><><>",req.body);
+        const newTimetable = new Timetable(req.body);
+        await newTimetable.save();
+        const populatedTimetable = await newTimetable
+            .populate('subject')
+            .populate('teacher')
+            .populate('classroom')
+            .populate('branch')
+            .populate('year')
+            .execPopulate();
+
+        res.status(201).json(populatedTimetable);
+    } catch (error) {
+        console.error('Error adding timetable entry:', error.message);
+        res.status(500).json({ message: 'Error adding timetable entry' });
+    }
+};
+
+// Edit API
+exports.editTimetableEntry = async (req, res) => {
+    try {
+        const { _id } = req.body;
+        const validationError = validateRequestBody(req.body);
+        if (validationError) {
+            return res.status(400).json({ message: validationError });
+        }
+        console.log("><><_id><><<>",_id)
+
+        const updatedTimetable = await Timetable.findByIdAndUpdate(_id, req.body, {
+            new: true, // Return the updated document
+            runValidators: false // Ensure validation rules are applied
+        })
+            .populate('subject')
+            .populate('teacher')
+            .populate('classroom')
+            .populate('branch')
+            .populate('year');
+
+            console.log("><><><><<>",updatedTimetable)
+        if (!updatedTimetable) {
+            return res.status(404).json({ message: 'Timetable entry not found' });
+        }
+
+        res.json(updatedTimetable);
+    } catch (error) {
+        console.error('Error updating timetable entry:', error.message);
+        res.status(500).json({ message: 'Error updating timetable entry' });
+    }
+
+};
